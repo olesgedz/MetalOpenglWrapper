@@ -1,0 +1,8 @@
+project(wrapper CXX)
+#set(CMAKE_CXX_EXTENSIONS ON)
+#set(CXX_STANDARD 20)
+set(CMAKE_CXX_FLAGS  -std=c++20)
+set(SOURCES src/main.cpp src/MetalAdder.cpp)
+include_directories(${PROJECT_SOURCE_DIR}/extern/metal-cpp)
+add_executable(wrapper ${SOURCES})
+target_link_libraries(wrapper "-lm -liconv -Wl,-framework,CoreAudio -Wl,-framework,AudioToolbox -Wl,-weak_framework,CoreHaptics -Wl,-weak_framework,GameController -Wl,-framework,ForceFeedback -lobjc -Wl,-framework,CoreVideo -Wl,-framework,Cocoa -Wl,-framework,Carbon -Wl,-framework,IOKit -Wl,-weak_framework,QuartzCore -Wl,-weak_framework,Metal")
