@@ -4,30 +4,36 @@
 
 #include "MetalAdder.hpp"
 #include <iostream>
-
+#include <sstream>
+#include <fstream>
 const unsigned int array_length = 1 << 5;
 const unsigned int buffer_size = array_length * sizeof(float);
 
 
+std::string readFile(std::filesystem::path p)
+{
+    auto file = std::ifstream(p);
+    assert(file.is_open());
+    return std::string(std::istreambuf_iterator<char>(file), std::istreambuf_iterator<char>());
+}
+
+void lib_assert(void *lib,   NS::Error* error) {
+    if (!lib && error) {
+        std::cerr << "Error creating dynamic library from source library "
+                  << error->localizedDescription()->cString(NS::ASCIIStringEncoding) << std::endl;
+        std::exit(-1);
+    }
+}
+
 void MetalAdder::init_with_device(MTL::Device* device){
     m_device = device;
     NS::Error* error;
-    NS::String*          pString = NS::String::string( "../src/add.metallib", NS::ASCIIStringEncoding );
-//    MTL::CompileOptions *options;
-//    options->init();
-//    std::cout << options->installName()->cString(NS::ASCIIStringEncoding) << std::endl;
-    MTL::Library*  default_library = m_device->newLibrary(pString,  &error);//Library(&error);
-//    MTL::LibraryError::LibraryErrorCompileFailure
-//    MTL::
-//    auto default_library = m_device->newLibrary()
-    if (!default_library){
-        std::cerr << error->code() << std::endl;
-        std::cerr << "Failed to load default library.";
-        std::exit(-1);
-    }
+    const auto shaderSrc = readFile("../src/add.metal");
+    MTL::Library *library = m_device->newLibrary(NS::String::string(shaderSrc.c_str(), NS::ASCIIStringEncoding), nullptr, &error);
+    lib_assert(library, error);
 
     auto function_name = NS::String::string("add_arrays", NS::ASCIIStringEncoding);
-    auto add_function = default_library->newFunction(function_name);
+    auto add_function = library->newFunction(function_name);
 
     if(!add_function){
         std::cerr << "Failed to find the adder function.";
@@ -37,6 +43,58 @@ void MetalAdder::init_with_device(MTL::Device* device){
     m_command_queue = m_device->newCommandQueue();
 
 };
+
+
+
+
+
+
+
+//void MetalAdder::init_with_device(MTL::Device* device){
+//    m_device = device;
+//    NS::Error* error;
+//    NS::String*          pString = NS::String::string( "../src/add.metallib", NS::ASCIIStringEncoding );
+//    MTL::CompileOptions *options;
+//    options->init();
+//    options->setLibraryType(MTL::LibraryTypeDynamic);
+//    options->setInstallName(NS::String::string( "../src/add.metallib", NS::ASCIIStringEncoding ));
+//
+//    std::cout << "Support " << m_device->supportsRenderDynamicLibraries() << std::endl;
+//    NS::String* program = NS::String::string( "//  add.metal\n #include <metal_stdlib>\n using namespace metal;\n kernel void add_arrays(device const float* inA,\n device const float* inB, \n device float* result, \n uint index [[thread_position_in_grid]])\n { result[index] = inA[index] + inB[index];}", NS::ASCIIStringEncoding );
+//    MTL::Library* smth = m_device->newLibrary(program, options, &error);
+//    if (!smth && error) {
+//        std::cerr << error->localizedDescription()->cString(NS::ASCIIStringEncoding) << std::endl;
+//        std::exit(-1);
+//    }
+//
+////    std::cout << options->installName()->cString(NS::ASCIIStringEncoding) << std::endl;
+//    MTL::Library*  default_library = m_device->newLibrary(pString,  &error);//Library(&error);
+//    auto  dylib = m_device->newDynamicLibrary(smth, &error);
+//    if (dylib)
+//     std::cout << dylib->description()->cString(NS::ASCIIStringEncoding) << std::endl;
+//    if (!dylib && error) {
+//        std::cerr << "Error creating dynamic library from source library " << error->localizedDescription()->cString(NS::ASCIIStringEncoding) << std::endl;
+//        std::exit(-1);
+//    }
+////    MTL::LibraryError::LibraryErrorCompileFailure
+////    MTL::
+////    auto default_library = m_device->newLibrary()
+//    if (!default_library){
+//        std::cerr << error->localizedDescription()->cString(NS::ASCIIStringEncoding)  << std::endl;
+//        std::exit(-1);
+//    }
+//
+//    auto function_name = NS::String::string("add_arrays", NS::ASCIIStringEncoding);
+//    auto add_function = default_library->newFunction(function_name);
+//
+//    if(!add_function){
+//        std::cerr << "Failed to find the adder function.";
+//    }
+//
+//    m_add_function_pso = m_device->newComputePipelineState(add_function, &error);
+//    m_command_queue = m_device->newCommandQueue();
+//
+//};
 
 
 void MetalAdder::prepare_data(){

@@ -24,7 +24,8 @@ void add_arrays(const float* inA,
 
 int main() {
     NS::AutoreleasePool* p_pool = NS::AutoreleasePool::alloc()->init();
-    MTL::Device* device = MTL::CreateSystemDefaultDevice();
+    NS::Array * devices = MTL::CopyAllDevices();
+    MTL::Device *device =  (MTL::Device *)devices->object(1);
     MetalAdder* adder = new MetalAdder();
     adder->init_with_device(device);
     adder->prepare_data();
